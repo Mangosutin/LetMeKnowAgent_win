@@ -37,7 +37,6 @@ Name: "quicklaunchicon"; Description: "タスクバーにショートカット�
 ; ------------------------------------------------------------
 [Dirs]
 Name: "{app}\assets"
-Name: "{app}\logs"
 
 ; ------------------------------------------------------------
 [Files]
@@ -55,46 +54,17 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{#MyAppName} を起動"; Flags:
 
 ; ------------------------------------------------------------
 [Code]
-var
-  LogPage: TInputDirWizardPage;
-
-function InitializeSetup(): Boolean;
-begin
-  LogPage := CreateInputDirWizardPage(
-    wpSelectDir,
-    'ログフォルダの選択',
-    'winletmeknow のログファイル (daemon.log) を保存するフォルダを選択してください。',
-    '',
-    ExpandConstant('{app}\logs'),
-    False
-  );
-  Result := True;
-end;
-
+; インストール完了後に config.json を生成（ログはデフォルトでインストール先/assets 隣の daemon.log）。
+; 後から config.json を編集して log_dir を設定できます。
 function CurStepChanged(CurStep: TSetupStep): Boolean;
 var
-  LogDir: String;
   ConfigContent: String;
 begin
   Result := True;
 
   if CurStep = ssPostInstall then
   begin
-    LogDir := LogPage.Values[0];
-
-    ; config.json を生成（ログフォルダ選択結果を log_dir に設定）
-    ConfigContent :=
-      '{' + #13#10 +
-      '  "port": 37821,' + #13#10 +
-      '  "aumid": "Mango.winLetmeknow",' + #13#10 +
-      '  "default_preset": "claude",' + #13#10 +
-      '  "log_dir": "' + LogDir + '",' + #13#10 +
-      '  "presets": {' + #13#10 +
-      '    "claude": { "name": "Claude Code", "icon": "assets/claude.png", "color": [128, 90, 180] },' + #13#10 +
-      '    "codex":  { "name": "Codex CLI",   "icon": "assets/codex.png",  "color": [30, 140, 170] },' + #13#10 +
-      '    "aider":  { "name": "Aider",       "icon": "assets/aider.png",  "color": [90, 150, 110] }' + #13#10 +
-      '  }' + #13#10 +
-      '}' + #13#10;
+    ConfigContent := '{"port": 37821, "aumid": "Mango.winLetmeknow", "default_preset": "claude", "presets": {"claude": {"name": "Claude Code", "icon": "assets/claude.png", "color": [128, 90, 180]}, "codex": {"name": "Codex CLI", "icon": "assets/codex.png", "color": [30, 140, 170]}, "aider": {"name": "Aider", "icon": "assets/aider.png", "color": [90, 150, 110]}}}';
 
     SaveStringToFile(ExpandConstant('{app}\config.json'), ConfigContent, False);
   end;
