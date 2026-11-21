@@ -43,6 +43,10 @@ pub struct Config {
     pub default_preset: Option<String>,
     #[serde(default)]
     pub presets: HashMap<String, Preset>,
+    /// ログファイル（daemon.log）の保存先ディレクトリ。
+    /// 未設定の場合は exe と同じディレクトリに作成する。
+    #[serde(default)]
+    pub log_dir: Option<PathBuf>,
 }
 
 fn default_port() -> u16 {
@@ -80,6 +84,7 @@ impl Config {
             aumid: default_aumid(),
             default_preset: Some("claude".to_string()),
             presets: builtin_presets(),
+            log_dir: None,
         }
     }
 

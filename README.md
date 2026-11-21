@@ -72,3 +72,34 @@ python scripts/gen_icons.py
 # リリースビルド
 cargo build --release
 ```
+
+## インストーラーの使い方 (Windows)
+
+`scripts/installer.iss` は [Inno Setup](https://jrsoftware.org/isinfo.php) 用のインストーラースクリプトです。
+
+### 前提条件
+- [Inno Setup](https://jrsoftware.org/download.php) (ISCC) がインストールされていること
+
+### ビルド手順
+
+1. リリースビルドを実行
+   ```powershell
+   cargo build --release
+   ```
+
+2. Inno Setup Compiler で `scripts/installer.iss` を開き、コンパイル（F5 または Build → Compile）
+
+3. 生成された `installer\winletmeknow_setup.exe` を配布・実行
+
+### インストール時の選択項目
+
+| 項目 | 説明 |
+|---|---|
+| **インストール先フォルダ** | `winletmeknow.exe` をインストールするディレクトリ（デフォルト: `C:\Program Files\winletmeknow`） |
+| **ログフォルダ** | `daemon.log` を保存するディレクトリ（デフォルト: インストール先 `\logs`） |
+| **デスクトップショートカット** | 作成するかどうか（任意） |
+
+インストール完了時に `config.json` が自動生成され、選択したログフォルダが `log_dir` として設定されます。後から `config.json` を編集すればログフォルダを変更できます。
+
+### アンインストール
+「コントロールパネル」>「プログラムと機能」からアンインストールできます。
