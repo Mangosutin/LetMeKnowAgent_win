@@ -61,6 +61,8 @@ jobs:
 
       - name: Ensure release exists
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           $content = Get-Content -Raw Cargo.toml
           $v = [regex]::Match($content, '(?ms)\[package\].*?version\s*=\s*"([^"]+)"').Groups[1].Value
@@ -71,6 +73,8 @@ jobs:
 
       - name: Upload installer to release
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           $content = Get-Content -Raw Cargo.toml
           $v = [regex]::Match($content, '(?ms)\[package\].*?version\s*=\s*"([^"]+)"').Groups[1].Value
