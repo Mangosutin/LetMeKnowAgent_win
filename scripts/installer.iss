@@ -57,15 +57,15 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{#MyAppName} を起動"; Flags:
 ; インストール完了後に config.json を生成（ログはデフォルトでインストール先/assets 隣の daemon.log）。
 ; 後から config.json を編集して log_dir を設定できます。
 function CurStepChanged(CurStep: TSetupStep): Boolean;
-var
-  ConfigContent: String;
 begin
   Result := True;
 
   if CurStep = ssPostInstall then
   begin
-    ConfigContent := '{"port": 37821, "aumid": "Mango.winLetmeknow", "default_preset": "claude", "presets": {"claude": {"name": "Claude Code", "icon": "assets/claude.png", "color": [128, 90, 180]}, "codex": {"name": "Codex CLI", "icon": "assets/codex.png", "color": [30, 140, 170]}, "aider": {"name": "Aider", "icon": "assets/aider.png", "color": [90, 150, 110]}}}';
-
-    SaveStringToFile(ExpandConstant('{app}\config.json'), ConfigContent, False);
+    SaveStringToFile(
+      ExpandConstant('{app}\config.json'),
+      '{"port": 37821, "aumid": "Mango.winLetmeknow", "default_preset": "claude", "presets": {"claude": {"name": "Claude Code", "icon": "assets/claude.png", "color": [128, 90, 180]}, "codex": {"name": "Codex CLI", "icon": "assets/codex.png", "color": [30, 140, 170]}, "aider": {"name": "Aider", "icon": "assets/aider.png", "color": [90, 150, 110]}}}',
+      False
+    );
   end;
 end;
