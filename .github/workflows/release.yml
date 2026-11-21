@@ -16,15 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get version from Cargo.toml
-        id: version
-        shell: pwsh
-        run: |
-          $content = Get-Content -Raw Cargo.toml
-          $m = [regex]::Match($content, '(?ms)\[package\].*?version\s*=\s*"([^"]+)"')
-          if (-not $m.Success) { Write-Error "Cargo.toml の version が見つかりません"; exit 1 }
-          "version=$($m.Groups[1].Value)" >> $GITHUB_OUTPUT
-
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
@@ -48,9 +39,10 @@ jobs:
       - name: Generate versioned installer script
         shell: pwsh
         run: |
-          $version = "${{ steps.version.outputs.version }}"
-          $content = Get-Content -Raw scripts\installer.iss
-          $content = $content -replace '#define MyAppVersion "[^"]*"', ('#define MyAppVersion "' + $version + '"')
+          $content = Get-Content -Raw Cargo.toml
+          $v = [regex]::Match($content, '(?ms)\[package\].*?version\s*=\s*"([^"]+)"').Groups[1].Value
+          if ([string]::IsNullOrWhiteSpace($v)) { Write-Error "Cargo.toml の version が見つかりません"; exit 1 }
+          $content = $content -replace '#define MyAppVersion "[^"]*"', ('#define MyAppVersion "' + $v + '"')
           Set-Content -Path installer_versioned.iss -Value $content
 
       - name: Compile installer (iscc)
@@ -70,17 +62,20 @@ jobs:
       - name: Ensure release exists
         shell: pwsh
         run: |
-          $tag = "${{ github.ref_name }}"
-          if ($tag -notlike "v*") { $tag = "v${{ steps.version.outputs.version }}" }
+          $content = Get-Content -Raw Cargo.toml
+          $v = [regex]::Match($content, '(?ms)\[package\].*?version\s*=\s*"([^"]+)"').Groups[1].Value
+          $tag = if ("$env:GITHUB_REF" -match '^refs/tags/(.+)$') { $Matches[1] } elseif ($v) { "v$v" } else { "" }
+          if ([string]::IsNullOrWhiteSpace($tag)) { Write-Error "タグが特定できません"; exit 1 }
           gh release view $tag >$null 2>&1
           if ($LASTEXITCODE -ne 0) { gh release create $tag --title "winletmeknow $tag" }
 
       - name: Upload installer to release
         shell: pwsh
         run: |
-          $tag = "${{ github.ref_name }}"
-          if ($tag -notlike "v*") { $tag = "v${{ steps.version.outputs.version }}" }
-          $v = "${{ steps.version.outputs.version }}"
+          $content = Get-Content -Raw Cargo.toml
+          $v = [regex]::Match($content, '(?ms)\[package\].*?version\s*=\s*"([^"]+)"').Groups[1].Value
+          $tag = if ("$env:GITHUB_REF" -match '^refs/tags/(.+)$') { $Matches[1] } elseif ($v) { "v$v" } else { "" }
+          if ([string]::IsNullOrWhiteSpace($tag)) { Write-Error "タグが特定できません"; exit 1 }
           $file = "installer\winletmeknow_setup_$v.exe"
           if (-not (Test-Path $file)) {
             $found = Get-ChildItem -Path 'installer\*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
