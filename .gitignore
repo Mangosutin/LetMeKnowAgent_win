@@ -3,3 +3,4 @@ winletmeknow.exe
 config.json
 daemon.log
 installer/
+installer_versioned.iss

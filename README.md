@@ -103,3 +103,20 @@ cargo build --release
 
 ### アンインストール
 「コントロールパネル」>「プログラムと機能」からアンインストールできます。
+
+## CI / リリース自動化
+
+`release.yml`（GitHub Actions）が、タグプッシュ時に自動で以下を実行します：
+
+1. リリースビルド（`cargo build --release`）
+2. Inno Setup（`iscc`）でインストーラーをコンパイル
+3. インストーラーを GitHub Release にアップロード
+
+### ワークフローの起動条件
+- `v` で始まるタグを `origin` にプッシュしたら自動実行
+
+### 手動トリガーも可能
+ブラウザで「Actions」タブ >「Release」>「Run workflow」から手動実行できます。
+
+### GitHub Actions 側で winget が利用できない場合
+`release.yml` の「Install Inno Setup (winget)」ステップで winget が見つからない場合は、Inno Setup インストーラー（`setup-6.x.x.exe`）をダウンロードして、`/VERYSILENT` 付きでインストール後、`C:\Program Files\Inno Setup*`（`iscc.exe`）が利用できるようになっていれば「Compile installer (iscc)」が動作します。その場合は winget ステップを削除・無効化してください。

@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build installer and release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version from Cargo.toml
+        id: version
+        shell: pwsh
+        run: |
+          $content = Get-Content -Raw Cargo.toml
+          $m = [regex]::Match($content, '(?ms)\[package\].*?version\s*=\s*"([^"]+)"')
+          if (-not $m.Success) { Write-Error "Cargo.toml の version が見つかりません"; exit 1 }
+          "version=$($m.Groups[1].Value)" >> $GITHUB_OUTPUT
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: cargo build --release
+        shell: pwsh
+        run: cargo build --release
+
+      - name: Copy assets to target\release
+        shell: pwsh
+        run: |
+          if (Test-Path assets) { Copy-Item -Path assets -Destination target\release\assets -Recurse -Force }
+
+      - name: Install Inno Setup (winget)
+        shell: pwsh
+        run: |
+          $winget = Get-Command winget -ErrorAction SilentlyContinue
+          if (-not $winget) {
+            $winget = Get-ChildItem -Path 'C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller*\winget.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          }
+          if (-not $winget) { Write-Error "winget が見つかりません"; exit 1 }
+          & $winget.FullName install --id JRSoftware.InnoSetup --silent --accept-source-agreements --accept-package-agreements
+
+      - name: Generate versioned installer script
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $content = Get-Content -Raw scripts\installer.iss
+          $content = $content -replace '#define MyAppVersion "[^"]*"', ('#define MyAppVersion "' + $version + '"')
+          Set-Content -Path installer_versioned.iss -Value $content
+
+      - name: Compile installer (iscc)
+        shell: pwsh
+        run: |
+          $iscc = Get-Command iscc -ErrorAction SilentlyContinue
+          if (-not $iscc) {
+            $iscc = Get-ChildItem -Path 'C:\Program Files\*', 'C:\Program Files (x86)\*' -Filter iscc.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          }
+          if (-not $iscc) { Write-Error "iscc.exe が見つかりません"; exit 1 }
+          & $iscc.FullName installer_versioned.iss
+
+      - name: Ensure release exists
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          gh release view $tag >$null 2>&1
+          if ($LASTEXITCODE -ne 0) { gh release create $tag --title "winletmeknow $tag" }
+
+      - name: Upload installer to release
+        shell: pwsh
+        run: |
+          $v = "${{ steps.version.outputs.version }}"
+          $file = "installer\winletmeknow_setup_$v.exe"
+          if (-not (Test-Path $file)) { Write-Error "インストーラーが見つかりません: $file"; exit 1 }
+          gh release upload "${{ github.ref_name }}" $file --clobber
