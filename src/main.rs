@@ -9,6 +9,7 @@
 mod clipboard;
 mod client;
 mod config;
+mod logger;
 mod notification;
 mod server;
 mod toast;

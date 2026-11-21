@@ -8,8 +8,9 @@
 //! クリック時は detail をクリップボードへコピー（activated コールバック経由）。
 
 use winrt_toast::content::image::{Image, ImageHintCrop, ImagePlacement};
-use winrt_toast::{Text, Toast, ToastManager, WinToastError};
+use winrt_toast::{Scenario, Text, Toast, ToastManager, WinToastError};
 
+use crate::logger;
 use crate::notification::Notification;
 
 /// トーストを表示する（UIスレッドではなく専用トーストスレッドで呼ばれる）
@@ -31,17 +32,25 @@ pub fn show_toast(manager: &ToastManager, notif: &Notification) {
     }
     toast.tag(notif.tag.clone());
     toast.launch(notif.tag.clone());
+    toast.scenario(Scenario::Reminder);
     if let Some(d) = notif.duration.clone() {
         toast.duration(d);
     }
     // クリック（activated）時に detail をクリップボードへコピー
     let detail = notif.detail.clone();
-    let _ = manager.show_with_callbacks(
+    if let Err(e) = manager.show_with_callbacks(
         &toast,
         Some(Box::new(move |_: Result<String, WinToastError>| {
             crate::clipboard::set_text(&detail);
         })),
         None,
         None,
-    );
+    ) {
+        logger::log_error(&format!("トースト表示に失敗しました: {e}"));
+    } else {
+        logger::log_info(&format!(
+            "トースト表示: title='{}' preset='{}'",
+            notif.title, notif.preset_name
+        ));
+    }
 }
