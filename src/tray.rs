@@ -22,15 +22,25 @@ use tray_icon::{Icon, TrayIconBuilder};
 use windows_sys::Win32::UI::WindowsAndMessaging::{DispatchMessageW, GetMessageW, MSG, SetTimer};
 
 use crate::config::Config;
+use crate::logger;
 use crate::notification::Notification;
 use crate::server;
 use crate::toast;
 
 /// デーモンを起動する（Ctrl-C相当以外では永久に常駐する）
 pub fn run_daemon(cfg: &Config) -> Result<(), String> {
-    // AUMID登録（最善努力、失敗は無視）
+    // ログファイル初期化（exe隣の daemon.log）
+    logger::init_log(&logger::log_path());
+    logger::log_info("デーモン起動");
+
+    // AUMID登録（失敗はログ出力）
     if let Some(icon) = cfg.preset_icon(None) {
-        let _ = winrt_toast::register(&cfg.aumid, "winletmeknow", Some(&icon));
+        match winrt_toast::register(&cfg.aumid, "winletmeknow", Some(&icon)) {
+            Ok(()) => logger::log_info(&format!("AUMID登録: {} ({})", cfg.aumid, icon.display())),
+            Err(e) => logger::log_error(&format!("AUMID登録に失敗しました: {e}")),
+        }
+    } else {
+        logger::log_warn("アイコンが見つからないため、AUMID登録をスキップしました");
     }
 
     let listener = TcpListener::bind(("127.0.0.1", cfg.port))
