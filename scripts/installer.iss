@@ -31,8 +31,8 @@ Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
 
 ; ------------------------------------------------------------
 [Tasks]
-Name: "desktopicon"; Descr: "{cm:DesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "quicklaunchicon"; Descr: "{cm:QuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:DesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "quicklaunchicon"; Description: "{cm:QuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 ; ------------------------------------------------------------
 [Dirs]
