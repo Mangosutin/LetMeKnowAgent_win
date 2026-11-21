@@ -54,6 +54,7 @@ fn write_log(level: &str, msg: &str) {
 }
 
 /// ログファイルパス（exe 隣の daemon.log）
+#[allow(dead_code)]
 pub fn log_path() -> PathBuf {
     crate::config::exe_dir().join("daemon.log")
 }

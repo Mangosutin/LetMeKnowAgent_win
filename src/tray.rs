@@ -29,8 +29,11 @@ use crate::toast;
 
 /// デーモンを起動する（Ctrl-C相当以外では永久に常駐する）
 pub fn run_daemon(cfg: &Config) -> Result<(), String> {
-    // ログファイル初期化（exe隣の daemon.log）
-    logger::init_log(&logger::log_path());
+    // ログファイル初期化（cfg.log_dir 指定時はそちら、未指定時は exe 隣の daemon.log）
+    let log_path = cfg.log_dir.as_ref()
+        .map(|d| d.join("daemon.log"))
+        .unwrap_or_else(|| crate::config::exe_dir().join("daemon.log"));
+    logger::init_log(&log_path);
     logger::log_info("デーモン起動");
 
     // AUMID登録（失敗はログ出力）
