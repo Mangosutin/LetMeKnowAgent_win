@@ -39,8 +39,8 @@ jobs:
       - name: Generate versioned installer script
         shell: pwsh
         run: |
-          $content = Get-Content -Raw Cargo.toml
-          $v = [regex]::Match($content, '(?ms)\[package\].*?version\s*=\s*"([^"]+)"').Groups[1].Value
+          $content = Get-Content -Raw scripts\installer.iss
+          $v = [regex]::Match((Get-Content -Raw Cargo.toml), '(?ms)\[package\].*?version\s*=\s*"([^"]+)"').Groups[1].Value
           if ([string]::IsNullOrWhiteSpace($v)) { Write-Error "Cargo.toml の version が見つかりません"; exit 1 }
           $content = $content -replace '#define MyAppVersion "[^"]*"', ('#define MyAppVersion "' + $v + '"')
           Set-Content -Path installer_versioned.iss -Value $content
