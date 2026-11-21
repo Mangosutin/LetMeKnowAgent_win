@@ -40,12 +40,10 @@ jobs:
       - name: Install Inno Setup (winget)
         shell: pwsh
         run: |
-          $winget = Get-Command winget -ErrorAction SilentlyContinue
-          if (-not $winget) {
-            $winget = Get-ChildItem -Path 'C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller*\winget.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
-          }
+          $winget = Get-Command winget -ErrorAction SilentlyContinue | Select-Object -First 1
           if (-not $winget) { Write-Error "winget が見つかりません"; exit 1 }
-          & $winget.FullName install --id JRSoftware.InnoSetup --silent --accept-source-agreements --accept-package-agreements
+          & $winget install --id JRSoftware.InnoSetup --silent --accept-source-agreements --accept-package-agreements
+          if ($LASTEXITCODE -ne 0) { Write-Error "winget インストールに失敗しました"; exit 1 }
 
       - name: Generate versioned installer script
         shell: pwsh
@@ -58,12 +56,16 @@ jobs:
       - name: Compile installer (iscc)
         shell: pwsh
         run: |
-          $iscc = Get-Command iscc -ErrorAction SilentlyContinue
-          if (-not $iscc) {
-            $iscc = Get-ChildItem -Path 'C:\Program Files\*', 'C:\Program Files (x86)\*' -Filter iscc.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          $isccPath = $null
+          $c = Get-Command iscc -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($c) { $isccPath = $c.Source }
+          if (-not (Test-Path $isccPath)) {
+            $f = Get-ChildItem -Path 'C:\Program Files\*', 'C:\Program Files (x86)\*' -Filter iscc.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($f) { $isccPath = $f.FullName }
           }
-          if (-not $iscc) { Write-Error "iscc.exe が見つかりません"; exit 1 }
-          & $iscc.FullName installer_versioned.iss
+          if (-not $isccPath) { Write-Error "iscc.exe が見つかりません"; exit 1 }
+          & $isccPath installer_versioned.iss
+          if ($LASTEXITCODE -ne 0) { Write-Error "iscc コンパイルに失敗しました"; exit 1 }
 
       - name: Ensure release exists
         shell: pwsh
@@ -77,5 +79,9 @@ jobs:
         run: |
           $v = "${{ steps.version.outputs.version }}"
           $file = "installer\winletmeknow_setup_$v.exe"
-          if (-not (Test-Path $file)) { Write-Error "インストーラーが見つかりません: $file"; exit 1 }
+          if (-not (Test-Path $file)) {
+            $found = Get-ChildItem -Path 'installer\*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($found) { $file = $found.FullName }
+          }
+          if (-not (Test-Path $file)) { Write-Error "インストーラーが見つかりません"; exit 1 }
           gh release upload "${{ github.ref_name }}" $file --clobber
