@@ -71,12 +71,15 @@ jobs:
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
+          if ($tag -notlike "v*") { $tag = "v${{ steps.version.outputs.version }}" }
           gh release view $tag >$null 2>&1
           if ($LASTEXITCODE -ne 0) { gh release create $tag --title "winletmeknow $tag" }
 
       - name: Upload installer to release
         shell: pwsh
         run: |
+          $tag = "${{ github.ref_name }}"
+          if ($tag -notlike "v*") { $tag = "v${{ steps.version.outputs.version }}" }
           $v = "${{ steps.version.outputs.version }}"
           $file = "installer\winletmeknow_setup_$v.exe"
           if (-not (Test-Path $file)) {
@@ -84,4 +87,4 @@ jobs:
             if ($found) { $file = $found.FullName }
           }
           if (-not (Test-Path $file)) { Write-Error "インストーラーが見つかりません"; exit 1 }
-          gh release upload "${{ github.ref_name }}" $file --clobber
+          gh release upload $tag $file --clobber
