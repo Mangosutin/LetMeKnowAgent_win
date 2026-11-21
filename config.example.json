@@ -1,0 +1,10 @@
+{
+  "port": 37821,
+  "aumid": "Mango.winLetmeknow",
+  "default_preset": "claude",
+  "presets": {
+    "claude": { "name": "Claude Code", "icon": "assets/claude.png", "color": [128, 90, 180] },
+    "codex":  { "name": "Codex CLI",   "icon": "assets/codex.png",  "color": [30, 140, 170] },
+    "aider":  { "name": "Aider",       "icon": "assets/aider.png",  "color": [90, 150, 110] }
+  }
+}
